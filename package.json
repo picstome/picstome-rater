@@ -1,0 +1,61 @@
+{
+  "name": "picstome-rater",
+  "version": "1.0.0",
+  "description": "Rate your Picstome favorites automatically",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist:mac": "electron-builder --mac --arm64 --x64",
+    "dist:win": "electron-builder --win",
+    "dist:all": "electron-builder --mac --win --arm64 --x64"
+  },
+  "dependencies": {
+    "electron-updater": "^6.1.7"
+  },
+  "devDependencies": {
+    "electron": "^42.4.1",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.picstome.rater",
+    "productName": "PicstomeRater",
+    "protocols": [
+      {
+        "name": "Picstome Rater",
+        "schemes": [
+          "picstome"
+        ]
+      }
+    ],
+    "extraResources": [
+      {
+        "from": "resources/",
+        "to": "resources/"
+      }
+    ],
+    "publish": {
+      "provider": "github",
+      "owner": "YOUR_GITHUB_USER",
+      "repo": "picstome-rater"
+    },
+    "mac": {
+      "category": "public.app-category.photography",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ]
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": true,
+      "shortcutName": "PicstomeRater"
+    }
+  }
+}
