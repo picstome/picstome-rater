@@ -89,6 +89,7 @@ function exiftoolPath() {
     : path.join(base, "exiftool");
 }
 
+// ─── Window ───────────────────────────────────────────────────────────────────
 let mainWindow = null;
 let pendingRate = null;
 
@@ -115,12 +116,18 @@ function createWindow() {
     }
   });
 
+  mainWindow.on("show", () => {
+    mainWindow.focus();
+    mainWindow.moveTop();
+  });
+
   mainWindow.on("close", (e) => {
     e.preventDefault();
     mainWindow.hide();
   });
 }
 
+// ─── URL scheme ───────────────────────────────────────────────────────────────
 if (process.defaultApp) {
   if (process.argv.length >= 2)
     app.setAsDefaultProtocolClient("picstome", process.execPath, [
@@ -147,6 +154,7 @@ function handleURL(url) {
     }
     mainWindow.show();
     mainWindow.focus();
+    mainWindow.moveTop();
     if (mainWindow.webContents.isLoading()) pendingRate = data;
     else mainWindow.webContents.send("incoming-rate", data);
   } catch (e) {
@@ -154,12 +162,14 @@ function handleURL(url) {
   }
 }
 
+// macOS
 app.on("open-url", (event, url) => {
   event.preventDefault();
   if (app.isReady()) handleURL(url);
   else pendingURL = url;
 });
 
+// Windows — single instance lock
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
   app.quit();
@@ -170,10 +180,17 @@ if (!gotLock) {
   });
 }
 
+// ─── IPC ──────────────────────────────────────────────────────────────────────
 ipcMain.handle("get-config", () => loadConfig());
 
 ipcMain.handle("select-folder", async () => {
-  const result = await dialog.showOpenDialog(mainWindow, {
+  if (mainWindow) {
+    mainWindow.show();
+    mainWindow.focus();
+    mainWindow.moveTop();
+  }
+  // No parent window — avoids macOS sheet-mode issues where dialog hides behind the app
+  const result = await dialog.showOpenDialog({
     title: t("selectFolderTitle"),
     properties: ["openDirectory"],
   });
@@ -190,6 +207,7 @@ ipcMain.handle("rate-files", async (event, { files, rating, photosDir }) => {
 
 ipcMain.handle("install-update", () => autoUpdater.quitAndInstall());
 
+// ─── Rating ───────────────────────────────────────────────────────────────────
 function doRate(files, rating, photosDir) {
   return new Promise((resolve) => {
     const exiftool = exiftoolPath();
@@ -205,6 +223,7 @@ function doRate(files, rating, photosDir) {
       "orf",
       "rw2",
     ];
+
     let dirFiles = [];
     try {
       dirFiles = fs.readdirSync(photosDir);
@@ -221,14 +240,17 @@ function doRate(files, rating, photosDir) {
       });
       return;
     }
+
     const details = [];
     let pending = files.length,
       rated = 0,
       notFound = 0,
       errors = 0;
+
     function done() {
       if (--pending === 0) resolve({ rated, notFound, errors, details });
     }
+
     files.forEach((base) => {
       let found = null;
       for (const ext of RAW_EXTS) {
@@ -281,6 +303,7 @@ function doRate(files, rating, photosDir) {
   });
 }
 
+// ─── Auto-updater ─────────────────────────────────────────────────────────────
 function setupAutoUpdater() {
   if (!app.isPackaged) return;
   autoUpdater.autoDownload = true;
@@ -300,6 +323,7 @@ function setupAutoUpdater() {
   autoUpdater.checkForUpdatesAndNotify();
 }
 
+// ─── App ready ────────────────────────────────────────────────────────────────
 let pendingURL = null;
 
 app.whenReady().then(() => {
@@ -313,5 +337,7 @@ app.whenReady().then(() => {
   }
 });
 
-app.on("window-all-closed", () => {});
+app.on("window-all-closed", () => {
+  /* keep alive in background */
+});
 app.on("activate", () => mainWindow?.show());
