@@ -1,7 +1,7 @@
 {
   "name": "picstome-rater",
   "version": "1.0.0",
-  "description": "Rate your Picstome favorites automatically",
+  "description": "Rate Picstome favorites with exiftool",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -10,11 +10,11 @@
     "dist:all": "electron-builder --mac --win --arm64 --x64"
   },
   "dependencies": {
-    "electron-updater": "^6.1.7"
+    "electron-updater": "^6.3.9"
   },
   "devDependencies": {
-    "electron": "^42.4.1",
-    "electron-builder": "^26.15.3"
+    "electron": "^30.0.0",
+    "electron-builder": "^24.13.3"
   },
   "build": {
     "appId": "com.picstome.rater",

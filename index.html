@@ -4,377 +4,132 @@
         <meta charset="UTF-8" />
         <meta
             http-equiv="Content-Security-Policy"
-            content="default-src 'self'; style-src 'unsafe-inline'"
+            content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:;"
         />
-        <title>PicstomeRater</title>
-        <style>
-            * {
-                box-sizing: border-box;
-                margin: 0;
-                padding: 0;
-            }
-            body {
-                font-family:
-                    -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-                background: #f2f2f2;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                height: 100vh;
-                padding: 24px;
-            }
-            .card {
-                background: white;
-                border-radius: 14px;
-                padding: 28px;
-                width: 100%;
-                box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
-            }
-            .logo {
-                font-size: 22px;
-                font-weight: 700;
-                color: #111;
-                margin-bottom: 4px;
-            }
-            .logo span {
-                color: #999;
-                font-weight: 400;
-            }
-            .subtitle {
-                font-size: 13px;
-                color: #999;
-                margin-bottom: 22px;
-            }
-            label {
-                display: block;
-                font-size: 11px;
-                font-weight: 600;
-                color: #777;
-                text-transform: uppercase;
-                letter-spacing: 0.06em;
-                margin-bottom: 7px;
-            }
-            .row {
-                display: flex;
-                gap: 8px;
-                margin-bottom: 18px;
-            }
-            .path-box {
-                flex: 1;
-                padding: 9px 12px;
-                border: 1.5px solid #e0e0e0;
-                border-radius: 8px;
-                font-size: 13px;
-                color: #333;
-                background: #fafafa;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-            }
-            .path-box.empty {
-                color: #bbb;
-            }
-            .info-row {
-                display: flex;
-                gap: 16px;
-                margin-bottom: 18px;
-            }
-            .info-chip {
-                background: #f5f5f5;
-                border-radius: 8px;
-                padding: 8px 14px;
-                font-size: 13px;
-                color: #444;
-            }
-            .info-chip strong {
-                color: #111;
-            }
-            button {
-                padding: 9px 18px;
-                background: #111;
-                color: white;
-                border: none;
-                border-radius: 8px;
-                font-size: 13px;
-                font-weight: 500;
-                cursor: pointer;
-            }
-            button:hover {
-                background: #333;
-            }
-            button:disabled {
-                background: #ccc;
-                cursor: not-allowed;
-            }
-            button.secondary {
-                background: transparent;
-                color: #555;
-                border: 1.5px solid #ddd;
-            }
-            button.secondary:hover {
-                background: #f5f5f5;
-            }
-            button.update-btn {
-                background: #0070f3;
-                margin-top: 10px;
-                width: 100%;
-            }
-            button.update-btn:hover {
-                background: #005dd1;
-            }
-            .btn-row {
-                display: flex;
-                gap: 8px;
-            }
-            .results {
-                margin-top: 18px;
-                border-top: 1px solid #eee;
-                padding-top: 16px;
-                display: none;
-            }
-            .results.visible {
-                display: block;
-            }
-            .result-summary {
-                font-size: 14px;
-                font-weight: 600;
-                margin-bottom: 10px;
-            }
-            .result-summary.ok {
-                color: #28a745;
-            }
-            .result-summary.warn {
-                color: #e0a800;
-            }
-            .result-summary.error {
-                color: #dc3545;
-            }
-            .detail-list {
-                max-height: 100px;
-                overflow-y: auto;
-                font-size: 12px;
-                color: #666;
-                line-height: 1.8;
-            }
-            .detail-list .ok {
-                color: #28a745;
-            }
-            .detail-list .miss {
-                color: #e0a800;
-            }
-            .detail-list .err {
-                color: #dc3545;
-            }
-            .spinner {
-                display: none;
-                font-size: 13px;
-                color: #888;
-                margin-top: 14px;
-            }
-            .spinner.visible {
-                display: block;
-            }
-            .update-banner {
-                display: none;
-                margin-top: 14px;
-                padding: 10px 14px;
-                background: #fff8e1;
-                border: 1px solid #ffe082;
-                border-radius: 8px;
-                font-size: 12px;
-                color: #795548;
-            }
-            .update-banner.visible {
-                display: block;
-            }
-        </style>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Picstome Rater</title>
+        <link rel="stylesheet" href="./styles.css" />
     </head>
     <body>
-        <div class="card">
-            <div class="logo">Picstome<span>Rater</span></div>
-            <div class="subtitle" id="subtitle">…</div>
-
-            <label id="folderLabel">Photos folder</label>
-            <div class="row">
-                <div class="path-box empty" id="pathBox">
-                    No folder selected
+        <div class="app-shell">
+            <div class="card">
+                <div class="brand">
+                    <img
+                        class="brand-logo"
+                        src="./assets/picstome-logo-transparent-2.2.png"
+                        alt="Picstome"
+                    />
                 </div>
-                <button class="secondary" id="btnBrowse">Change…</button>
-            </div>
 
-            <div class="info-row" id="infoRow" style="display: none">
-                <div class="info-chip">
-                    📷 <strong id="fileCount">0</strong>
-                    <span id="photosLabel">photos</span>
+                <div class="header">
+                    <div class="subtitle" id="subtitle">…</div>
                 </div>
-                <div class="info-chip">
-                    <span id="ratingLabel">Rating</span>
-                    <strong id="ratingVal">1</strong> ⭐
+
+                <div class="section">
+                    <label class="title-label" id="folderLabel"
+                        >Photos folder</label
+                    >
+                    <div class="row">
+                        <div class="path-box empty" id="pathBox">
+                            No folder selected
+                        </div>
+                        <button
+                            class="secondary"
+                            id="btnChooseFolder"
+                            type="button"
+                        >
+                            Change...
+                        </button>
+                    </div>
                 </div>
-            </div>
 
-            <div class="btn-row">
-                <button id="btnRate" disabled>Apply rating</button>
-            </div>
+                <div class="info-row hidden" id="infoRow">
+                    <div class="info-chip">
+                        <span class="chip-label">Photos</span>
+                        <strong id="fileCount">0</strong>
+                        <span id="photosLabel">photos</span>
+                    </div>
 
-            <div class="spinner" id="spinner">⏳ Applying rating…</div>
+                    <div class="info-chip info-chip-rating">
+                        <span class="chip-label" id="ratingLabel">Rating</span>
 
-            <div class="results" id="results">
-                <div class="result-summary" id="resultSummary"></div>
-                <div class="detail-list" id="detailList"></div>
-            </div>
+                        <div
+                            class="star-picker"
+                            id="starPicker"
+                            aria-label="Rating selector"
+                        >
+                            <button
+                                type="button"
+                                class="star-btn"
+                                data-rating="1"
+                                aria-label="1 star"
+                            >
+                                ★
+                            </button>
+                            <button
+                                type="button"
+                                class="star-btn"
+                                data-rating="2"
+                                aria-label="2 stars"
+                            >
+                                ★
+                            </button>
+                            <button
+                                type="button"
+                                class="star-btn"
+                                data-rating="3"
+                                aria-label="3 stars"
+                            >
+                                ★
+                            </button>
+                            <button
+                                type="button"
+                                class="star-btn"
+                                data-rating="4"
+                                aria-label="4 stars"
+                            >
+                                ★
+                            </button>
+                            <button
+                                type="button"
+                                class="star-btn"
+                                data-rating="5"
+                                aria-label="5 stars"
+                            >
+                                ★
+                            </button>
+                        </div>
 
-            <div class="update-banner" id="updateBanner">
-                <span id="updateMsg"></span>
-                <button class="update-btn" id="btnUpdate" style="display: none">
-                    Restart &amp; Update
-                </button>
+                        <strong id="ratingVal">1</strong>
+                    </div>
+                </div>
+
+                <div class="btn-row">
+                    <button id="btnRate" type="button" disabled>
+                        Apply rating
+                    </button>
+                </div>
+
+                <div class="spinner hidden" id="spinner">Applying rating…</div>
+
+                <div class="results hidden" id="results">
+                    <div class="result-summary" id="resultSummary"></div>
+                    <div class="detail-list" id="detailList"></div>
+                </div>
+
+                <div class="update-banner hidden" id="updateBanner">
+                    <span id="updateMsg"></span>
+                    <button
+                        class="update-btn hidden"
+                        id="btnUpdate"
+                        type="button"
+                    >
+                        Restart &amp; Update
+                    </button>
+                </div>
             </div>
         </div>
 
-        <script>
-            let S = {};
-            let currentFiles = [];
-            let currentRating = "1";
-
-            window.api.onInit(({ strings }) => {
-                S = strings;
-                document.getElementById("subtitle").textContent =
-                    S.waiting ?? "…";
-                document.getElementById("folderLabel").textContent =
-                    S.folderLabel ?? "Photos folder";
-                document.getElementById("pathBox").textContent =
-                    S.noFolder ?? "No folder selected";
-                document.getElementById("btnBrowse").textContent =
-                    S.changeBtn ?? "Change…";
-                document.getElementById("btnRate").textContent =
-                    S.applyBtn ?? "Apply rating";
-                document.getElementById("photosLabel").textContent =
-                    S.photos ?? "photos";
-                document.getElementById("ratingLabel").textContent =
-                    S.rating ?? "Rating";
-                document.getElementById("spinner").textContent =
-                    S.applying ?? "⏳ Applying…";
-            });
-
-            window.api.getConfig().then((cfg) => {
-                if (cfg.photosDir) setPath(cfg.photosDir);
-            });
-
-            window.api.onIncomingRate(({ files, rating }) => {
-                currentFiles = files;
-                currentRating = rating;
-                const readyFn =
-                    typeof S.ready === "function"
-                        ? S.ready
-                        : (n, r) => `Ready: ${n} @ ${r}⭐`;
-                document.getElementById("subtitle").textContent = readyFn(
-                    files.length,
-                    rating,
-                );
-                document.getElementById("fileCount").textContent = files.length;
-                document.getElementById("ratingVal").textContent = rating;
-                document.getElementById("infoRow").style.display = "flex";
-                document.getElementById("btnRate").disabled = !currentPath();
-                document.getElementById("results").classList.remove("visible");
-                document.getElementById("spinner").classList.remove("visible");
-            });
-
-            document
-                .getElementById("btnBrowse")
-                .addEventListener("click", async () => {
-                    const folder = await window.api.selectFolder();
-                    if (folder) {
-                        setPath(folder);
-                        document.getElementById("btnRate").disabled =
-                            currentFiles.length === 0;
-                    }
-                });
-
-            document
-                .getElementById("btnRate")
-                .addEventListener("click", async () => {
-                    const dir = currentPath();
-                    if (!dir || currentFiles.length === 0) return;
-                    document.getElementById("btnRate").disabled = true;
-                    document.getElementById("spinner").classList.add("visible");
-                    document
-                        .getElementById("results")
-                        .classList.remove("visible");
-                    const result = await window.api.rateFiles({
-                        files: currentFiles,
-                        rating: currentRating,
-                        photosDir: dir,
-                    });
-                    document
-                        .getElementById("spinner")
-                        .classList.remove("visible");
-                    document.getElementById("btnRate").disabled = false;
-                    showResults(result);
-                });
-
-            function showResults({ rated, notFound, errors, details }) {
-                const ratedFn =
-                    typeof S.rated === "function"
-                        ? S.rated
-                        : (n) => `✅ ${n} rated`;
-                const nfFn =
-                    typeof S.notFound === "function"
-                        ? S.notFound
-                        : (n) => `⚠️ ${n} not found`;
-                const errFn =
-                    typeof S.errors === "function"
-                        ? S.errors
-                        : (n) => `❌ ${n} errors`;
-                let cls = "ok",
-                    parts = [ratedFn(rated)];
-                if (notFound > 0) {
-                    parts.push(nfFn(notFound));
-                    cls = "warn";
-                }
-                if (errors > 0) {
-                    parts.push(errFn(errors));
-                    cls = "error";
-                }
-                document.getElementById("resultSummary").textContent =
-                    parts.join(" · ");
-                document.getElementById("resultSummary").className =
-                    "result-summary " + cls;
-                document.getElementById("detailList").innerHTML = details
-                    .map((d) =>
-                        d.status === "ok"
-                            ? `<div class="ok">✔ ${d.file}</div>`
-                            : d.status === "notfound"
-                              ? `<div class="miss">⚠ ${d.name} — ${d.msg}</div>`
-                              : `<div class="err">✖ ${d.name} — ${d.msg}</div>`,
-                    )
-                    .join("");
-                document.getElementById("results").classList.add("visible");
-            }
-
-            window.api.onUpdateStatus(({ type, msg }) => {
-                document.getElementById("updateMsg").textContent = msg;
-                document
-                    .getElementById("updateBanner")
-                    .classList.add("visible");
-                if (type === "ready")
-                    document.getElementById("btnUpdate").style.display =
-                        "block";
-            });
-
-            document
-                .getElementById("btnUpdate")
-                .addEventListener("click", () => window.api.installUpdate());
-
-            function setPath(p) {
-                const box = document.getElementById("pathBox");
-                box.textContent = p;
-                box.className = "path-box";
-                box.dataset.path = p;
-            }
-            function currentPath() {
-                return document.getElementById("pathBox").dataset.path || null;
-            }
-        </script>
+        <script src="./renderer.js"></script>
     </body>
 </html>
