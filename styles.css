@@ -1,0 +1,427 @@
+@font-face {
+    font-family: "League Spartan";
+    src: local("League Spartan");
+    font-weight: 100 900;
+    font-display: swap;
+}
+
+:root {
+    --pine: #316d61;
+    --graphite: #322f30;
+    --coral: #ee6958;
+    --tea: #c6d8af;
+    --floral: #fff9ec;
+
+    --bg: linear-gradient(180deg, #fffdf8 0%, #fff9ec 100%);
+    --card: rgba(255, 249, 236, 0.94);
+    --text: #322f30;
+    --muted: #5f5b5c;
+    --line: rgba(49, 109, 97, 0.18);
+    --chip: rgba(198, 216, 175, 0.34);
+    --primary: #316d61;
+    --primary-hover: #28584f;
+    --success: #316d61;
+    --warn: #ee6958;
+    --error: #c84f42;
+    --star-off: #d8d2c7;
+    --star-on: #ee6958;
+    --update-bg: rgba(238, 105, 88, 0.08);
+    --update-border: rgba(238, 105, 88, 0.25);
+    --update-text: #8f3f34;
+    --shadow: 0 18px 56px rgba(50, 47, 48, 0.08);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html,
+body {
+    width: 100%;
+    height: 100%;
+}
+
+body {
+    font-family:
+        "League Spartan",
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.app-shell {
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    padding: 24px;
+}
+
+.card {
+    max-width: 920px;
+    margin: 0 auto;
+    background: var(--card);
+    border: 1px solid rgba(49, 109, 97, 0.1);
+    border-radius: 26px;
+    padding: 28px;
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(8px);
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 18px;
+}
+
+.brand-logo {
+    width: min(420px, 82%);
+    height: auto;
+    display: block;
+}
+
+.header {
+    margin-bottom: 24px;
+}
+
+.subtitle {
+    text-align: center;
+    font-size: 19px;
+    line-height: 1.15;
+    color: var(--graphite);
+    letter-spacing: -0.01em;
+}
+
+.section {
+    margin-bottom: 20px;
+}
+
+.title-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--pine);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    margin-bottom: 10px;
+}
+
+.row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.path-box {
+    flex: 1;
+    min-height: 56px;
+    display: flex;
+    align-items: center;
+    padding: 0 18px;
+    border: 1.5px solid var(--line);
+    border-radius: 16px;
+    font-size: 18px;
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.62);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.path-box.empty {
+    color: #b3afa8;
+}
+
+.info-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 22px;
+}
+
+.info-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 50px;
+    padding: 0 16px;
+    border-radius: 16px;
+    background: var(--chip);
+    color: var(--graphite);
+    font-size: 18px;
+    border: 1px solid rgba(49, 109, 97, 0.08);
+}
+
+.info-chip strong {
+    color: var(--text);
+    font-weight: 700;
+}
+
+.info-chip-rating {
+    gap: 12px;
+}
+
+.chip-label {
+    color: var(--muted);
+}
+
+.star-picker {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.star-btn {
+    min-height: auto;
+    min-width: auto;
+    padding: 0;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    color: var(--star-off);
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+    border-radius: 8px;
+}
+
+.star-btn:hover {
+    transform: translateY(-1px);
+    color: var(--coral);
+    background: transparent;
+}
+
+.star-btn.active {
+    color: var(--star-on);
+}
+
+.star-btn:focus-visible {
+    outline: 2px solid rgba(49, 109, 97, 0.35);
+    outline-offset: 2px;
+}
+
+button {
+    min-height: 56px;
+    padding: 0 20px;
+    border: none;
+    border-radius: 16px;
+    font-family:
+        "League Spartan",
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    cursor: pointer;
+    transition:
+        background 120ms ease,
+        transform 120ms ease,
+        opacity 120ms ease,
+        box-shadow 120ms ease,
+        color 120ms ease;
+}
+
+button:hover {
+    transform: translateY(-1px);
+}
+
+button:disabled {
+    background: #d8d5cf !important;
+    color: #ffffff !important;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+button.secondary {
+    background: rgba(255, 255, 255, 0.88);
+    color: var(--graphite);
+    border: 1.5px solid rgba(50, 47, 48, 0.1);
+}
+
+button.secondary:hover {
+    background: #ffffff;
+}
+
+#btnRate {
+    background: var(--primary);
+    color: #ffffff;
+    box-shadow: 0 8px 18px rgba(49, 109, 97, 0.16);
+}
+
+#btnRate:hover {
+    background: var(--primary-hover);
+}
+
+.btn-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.spinner {
+    margin-bottom: 16px;
+    font-size: 15px;
+    color: var(--muted);
+}
+
+.results {
+    margin-top: 10px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(49, 109, 97, 0.14);
+}
+
+.result-summary {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin-bottom: 14px;
+}
+
+.result-summary.ok {
+    color: var(--success);
+}
+
+.result-summary.warn {
+    color: var(--warn);
+}
+
+.result-summary.error {
+    color: var(--error);
+}
+
+.detail-list {
+    max-height: 220px;
+    overflow: auto;
+    padding-right: 6px;
+    font-size: 17px;
+    line-height: 1.6;
+}
+
+.detail-list .ok {
+    color: var(--success);
+}
+
+.detail-list .miss {
+    color: var(--warn);
+}
+
+.detail-list .err {
+    color: var(--error);
+}
+
+.update-banner {
+    margin-top: 16px;
+    padding: 14px 16px;
+    border-radius: 16px;
+    background: var(--update-bg);
+    border: 1px solid var(--update-border);
+    color: var(--update-text);
+    font-size: 14px;
+}
+
+.update-btn {
+    width: 100%;
+    margin-top: 10px;
+    background: var(--coral);
+    color: #ffffff;
+}
+
+.update-btn:hover {
+    background: #d75c4d;
+}
+
+.app-shell::-webkit-scrollbar,
+.detail-list::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+.app-shell::-webkit-scrollbar-track,
+.detail-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.app-shell::-webkit-scrollbar-thumb,
+.detail-list::-webkit-scrollbar-thumb {
+    background: rgba(49, 109, 97, 0.38);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+
+.app-shell::-webkit-scrollbar-thumb:hover,
+.detail-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(49, 109, 97, 0.58);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+
+.app-shell,
+.detail-list {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(49, 109, 97, 0.45) transparent;
+}
+
+@media (max-width: 840px) {
+    .app-shell {
+        padding: 16px;
+    }
+
+    .card {
+        padding: 20px;
+        border-radius: 20px;
+    }
+
+    .brand-logo {
+        width: min(340px, 88%);
+    }
+
+    .subtitle {
+        font-size: 17px;
+    }
+
+    .row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .info-row {
+        flex-direction: column;
+    }
+
+    .info-chip,
+    .path-box,
+    button {
+        width: 100%;
+    }
+
+    .path-box {
+        font-size: 16px;
+    }
+
+    .info-chip,
+    .detail-list {
+        font-size: 16px;
+    }
+
+    .result-summary {
+        font-size: 20px;
+    }
+
+    .btn-row {
+        flex-direction: column;
+    }
+}
