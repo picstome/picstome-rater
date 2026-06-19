@@ -1,8 +1,10 @@
 {
   "name": "picstome-rater",
   "version": "1.0.0",
-  "description": "Rate Picstome favorites with exiftool",
+  "description": "Desktop app to apply star ratings from Picstome links",
   "main": "main.js",
+  "author": "Picstome",
+  "license": "MIT",
   "scripts": {
     "start": "electron .",
     "dist:mac": "electron-builder --mac --arm64 --x64",
@@ -13,12 +15,15 @@
     "electron-updater": "^6.3.9"
   },
   "devDependencies": {
-    "electron": "^30.0.0",
-    "electron-builder": "^24.13.3"
+    "electron": "^42.4.1",
+    "electron-builder": "^26.15.3"
   },
   "build": {
     "appId": "com.picstome.rater",
-    "productName": "PicstomeRater",
+    "productName": "Picstome Rater",
+    "directories": {
+      "buildResources": "build"
+    },
     "protocols": [
       {
         "name": "Picstome Rater",
@@ -35,10 +40,11 @@
     ],
     "publish": {
       "provider": "github",
-      "owner": "YOUR_GITHUB_USER",
+      "owner": "picstome",
       "repo": "picstome-rater"
     },
     "mac": {
+      "icon": "build/icon.png",
       "category": "public.app-category.photography",
       "target": [
         {
@@ -51,11 +57,12 @@
       ]
     },
     "win": {
+      "icon": "build/icon.png",
       "target": "nsis"
     },
     "nsis": {
       "oneClick": true,
-      "shortcutName": "PicstomeRater"
+      "shortcutName": "Picstome Rater"
     }
   }
 }

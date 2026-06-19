@@ -77,6 +77,7 @@ function ratingPercentFromStars(rating) {
 let mainWindow = null;
 let pendingRate = null;
 let pendingURL = null;
+let isQuitting = false;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -99,6 +100,7 @@ function createWindow() {
 
   mainWindow.webContents.on("did-finish-load", () => {
     const cfg = loadConfig();
+
     mainWindow.webContents.send("init", {
       lang: getLang(),
       config: {
@@ -113,14 +115,17 @@ function createWindow() {
     }
   });
 
-  mainWindow.on("close", (e) => {
-    e.preventDefault();
-    mainWindow.hide();
+  mainWindow.on("closed", () => {
+    mainWindow = null;
   });
 }
 
 function showMainWindow() {
-  if (!mainWindow) return;
+  if (!mainWindow) {
+    createWindow();
+    return;
+  }
+
   if (mainWindow.isMinimized()) mainWindow.restore();
   mainWindow.show();
   mainWindow.focus();
@@ -162,17 +167,10 @@ function handleURL(url) {
     const payload = parseRateURL(url);
     if (!payload) return;
 
-    if (!mainWindow || !mainWindow.webContents) {
-      pendingRate = payload;
-      return;
-    }
+    pendingRate = payload;
 
-    showMainWindow();
-
-    if (mainWindow.webContents.isLoading()) {
-      pendingRate = payload;
-    } else {
-      mainWindow.webContents.send("incoming-rate", payload);
+    if (app.isReady()) {
+      showMainWindow();
     }
   } catch (err) {
     console.error("Invalid picstome URL:", err);
@@ -190,8 +188,11 @@ function setupSingleInstance() {
     const deepLink = argv.find(
       (arg) => typeof arg === "string" && arg.startsWith("picstome://"),
     );
-    if (deepLink) handleURL(deepLink);
-    else showMainWindow();
+    if (deepLink) {
+      handleURL(deepLink);
+    } else {
+      showMainWindow();
+    }
   });
 
   return true;
@@ -338,6 +339,7 @@ ipcMain.handle("rate-files", async (event, { files, rating, photosDir }) => {
 });
 
 ipcMain.handle("install-update", () => {
+  isQuitting = true;
   autoUpdater.quitAndInstall();
 });
 
@@ -368,6 +370,10 @@ if (!setupSingleInstance()) {
 } else {
   registerProtocol();
 
+  app.on("before-quit", () => {
+    isQuitting = true;
+  });
+
   app.on("open-url", (event, url) => {
     event.preventDefault();
     if (app.isReady()) handleURL(url);
@@ -389,12 +395,19 @@ if (!setupSingleInstance()) {
       pendingURL = null;
     } else if (!app.isPackaged) {
       showMainWindow();
+    } else {
+      showMainWindow();
     }
   });
 
   app.on("activate", () => {
+    if (!mainWindow) {
+      createWindow();
+    }
     showMainWindow();
   });
 
-  app.on("window-all-closed", () => {});
+  app.on("window-all-closed", () => {
+    app.quit();
+  });
 }
