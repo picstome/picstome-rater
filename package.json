@@ -15,8 +15,8 @@
     "electron-updater": "^6.3.9"
   },
   "devDependencies": {
-    "electron": "^42.4.1",
-    "electron-builder": "^26.15.3"
+    "electron": "^30.0.9",
+    "electron-builder": "^24.13.3"
   },
   "build": {
     "appId": "com.picstome.rater",
@@ -24,6 +24,15 @@
     "directories": {
       "buildResources": "build"
     },
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer.js",
+      "index.html",
+      "styles.css",
+      "assets/**/*",
+      "package.json"
+    ],
     "protocols": [
       {
         "name": "Picstome Rater",
@@ -35,7 +44,10 @@
     "extraResources": [
       {
         "from": "resources/",
-        "to": "resources/"
+        "to": "resources/",
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "publish": {
