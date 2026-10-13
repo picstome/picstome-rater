@@ -1,43 +1,6 @@
-const STRINGS = {
-  en: {
-    noFolder: "No folder selected",
-    waiting: "Waiting for a Picstome link...",
-    needFolder: "Select a photos folder first",
-    needFiles: "Waiting for a Picstome link...",
-    ready: (n, r) =>
-      `Ready to rate ${n} photo${n !== 1 ? "s" : ""} with ${r} ★`,
-    applying: "Applying rating…",
-    applyBtn: "Apply rating",
-    changeBtn: "Change...",
-    folderLabel: "Photos folder",
-    photos: "photos",
-    rating: "Rating",
-    rated: (n) => `✓ ${n} file${n !== 1 ? "s" : ""} rated`,
-    notFound: (n) => `⚠ ${n} not found`,
-    errors: (n) => `✖ ${n} error${n !== 1 ? "s" : ""}`,
-  },
-  es: {
-    noFolder: "Ninguna carpeta seleccionada",
-    waiting: "Esperando enlace de Picstome...",
-    needFolder: "Selecciona primero la carpeta de fotos",
-    needFiles: "Esperando enlace de Picstome...",
-    ready: (n, r) =>
-      `Listo para ratear ${n} foto${n !== 1 ? "s" : ""} con ${r} ★`,
-    applying: "Aplicando rating…",
-    applyBtn: "Aplicar rating",
-    changeBtn: "Cambiar...",
-    folderLabel: "Carpeta de fotos",
-    photos: "fotos",
-    rating: "Rating",
-    rated: (n) =>
-      `✓ ${n} archivo${n !== 1 ? "s" : ""} rateado${n !== 1 ? "s" : ""}`,
-    notFound: (n) => `⚠ ${n} no encontrado${n !== 1 ? "s" : ""}`,
-    errors: (n) => `✖ ${n} error${n !== 1 ? "es" : ""}`,
-  },
-};
-
 const state = {
   lang: "en",
+  strings: null,
   folder: "",
   files: [],
   rating: "1",
@@ -73,8 +36,10 @@ for (const [key, el] of Object.entries(els)) {
   }
 }
 
-function S() {
-  return STRINGS[state.lang] ?? STRINGS.en;
+function fmt(template, vars) {
+  return String(template).replace(/\{(\w+)\}/g, (match, key) =>
+    key in vars ? String(vars[key]) : match,
+  );
 }
 
 function normalizeRating(value) {
@@ -109,7 +74,8 @@ function setRating(value) {
 }
 
 function render() {
-  const s = S();
+  if (!state.strings) return;
+  const s = state.strings;
 
   els.folderLabel.textContent = s.folderLabel;
   els.btnChooseFolder.textContent = s.changeBtn;
@@ -137,7 +103,11 @@ function render() {
 
   if (state.files.length > 0) {
     els.subtitle.textContent = state.folder
-      ? s.ready(state.files.length, state.rating)
+      ? fmt(s.ready, {
+          n: state.files.length,
+          s: state.files.length === 1 ? "" : "s",
+          r: state.rating,
+        })
       : s.needFolder;
   } else {
     els.subtitle.textContent = state.folder ? s.needFiles : s.waiting;
@@ -150,37 +120,42 @@ function render() {
 }
 
 function showResults({ rated, notFound, errors, details }) {
-  const s = S();
+  const s = state.strings;
+  if (!s) return;
+
   let cls = "ok";
-  const parts = [s.rated(rated)];
+  const parts = [fmt(s.rated, { n: rated, s: rated === 1 ? "" : "s" })];
 
   if (notFound > 0) {
-    parts.push(s.notFound(notFound));
+    parts.push(fmt(s.notFound, { n: notFound, s: notFound === 1 ? "" : "s" }));
     cls = "warn";
   }
 
   if (errors > 0) {
-    parts.push(s.errors(errors));
+    parts.push(fmt(s.errors, { n: errors, s: errors === 1 ? "" : "s" }));
     cls = "error";
   }
 
   els.resultSummary.textContent = parts.join(" · ");
   els.resultSummary.className = `result-summary ${cls}`;
 
-  els.detailList.innerHTML = details
-    .map((d) => {
-      if (d.status === "ok") return `<div class="ok">✔ ${d.file}</div>`;
-      if (d.status === "notfound")
-        return `<div class="miss">⚠ ${d.name} — ${d.msg}</div>`;
-      return `<div class="err">✖ ${d.name} — ${d.msg}</div>`;
-    })
-    .join("");
+  const fragment = document.createDocumentFragment();
+
+  for (const d of details) {
+    const row = document.createElement("div");
+    row.className = d.status === "ok" ? "ok" : d.status === "notfound" ? "miss" : "err";
+    row.textContent = d.status === "ok" ? d.file : `${d.name} — ${d.msg}`;
+    fragment.appendChild(row);
+  }
+
+  els.detailList.replaceChildren(fragment);
 
   show(els.results);
 }
 
-window.api.onInit(({ lang, config }) => {
+window.api.onInit(({ lang, config, strings }) => {
   state.lang = lang || "en";
+  state.strings = strings;
   state.folder = config?.photosDir || "";
   state.rating = normalizeRating(config?.lastRating || "1");
   render();
@@ -216,7 +191,7 @@ for (const btn of els.starButtons) {
 }
 
 els.btnRate.addEventListener("click", async () => {
-  if (!canRate()) return;
+  if (!canRate() || !state.strings) return;
 
   state.busy = true;
   hide(els.results);
@@ -229,6 +204,11 @@ els.btnRate.addEventListener("click", async () => {
       photosDir: state.folder,
     });
     showResults(result);
+  } catch (err) {
+    els.resultSummary.textContent = String(err);
+    els.resultSummary.className = "result-summary error";
+    els.detailList.replaceChildren();
+    show(els.results);
   } finally {
     state.busy = false;
     render();
@@ -238,5 +218,3 @@ els.btnRate.addEventListener("click", async () => {
 els.btnUpdate.addEventListener("click", () => {
   window.api.installUpdate();
 });
-
-render();

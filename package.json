@@ -1,6 +1,6 @@
 {
   "name": "picstome-rater",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Desktop app to apply star ratings from Picstome links",
   "main": "main.js",
   "author": "Picstome",
@@ -15,7 +15,7 @@
     "electron-updater": "^6.3.9"
   },
   "devDependencies": {
-    "electron": "^30.0.9",
+    "electron": "^42.4.1",
     "electron-builder": "^24.13.3"
   },
   "build": {

@@ -6,6 +6,13 @@ const { execFile } = require("child_process");
 
 const APP_NAME = "Picstome Rater";
 
+const MAX_FILES = 5000;
+const BATCH_SIZE = 20;
+const EXIFTOOL_TIMEOUT_MS = 60000;
+const PROBE_TIMEOUT_MS = 5000;
+const IMAGE_EXTS = ["jpg", "jpeg", "dng"];
+const RAW_EXTS = ["cr3", "cr2", "arw", "nef", "raf", "orf", "rw2"];
+
 const STRINGS = {
   en: {
     selectFolderTitle: "Where are your photos?",
@@ -13,6 +20,23 @@ const STRINGS = {
     notFoundDetail: "not found",
     updateAvailable: "Update available — downloading...",
     updateReady: "Update ready. Restart the app to install it.",
+    exiftoolMissing: "Photo tool unavailable",
+    tooManyFiles: "Too many files in one link (limit {max})",
+    invalidRequest: "Invalid request",
+    noFolder: "No folder selected",
+    waiting: "Waiting for a Picstome link...",
+    needFolder: "Select a photos folder first",
+    needFiles: "Waiting for a Picstome link...",
+    ready: "Ready to rate {n} photo{s} with {r} ★",
+    applying: "Applying rating…",
+    applyBtn: "Apply rating",
+    changeBtn: "Change...",
+    folderLabel: "Photos folder",
+    photos: "photos",
+    rating: "Rating",
+    rated: "✓ {n} file{s} rated",
+    notFound: "⚠ {n} not found",
+    errors: "✖ {n} error{s}",
   },
   es: {
     selectFolderTitle: "¿Dónde están tus fotos?",
@@ -20,6 +44,23 @@ const STRINGS = {
     notFoundDetail: "no encontrado",
     updateAvailable: "Actualización disponible — descargando...",
     updateReady: "Actualización lista. Reinicia la app para instalarla.",
+    exiftoolMissing: "Herramienta de fotos no disponible",
+    tooManyFiles: "Demasiados archivos en un enlace (límite {max})",
+    invalidRequest: "Solicitud inválida",
+    noFolder: "Ninguna carpeta seleccionada",
+    waiting: "Esperando enlace de Picstome...",
+    needFolder: "Selecciona primero la carpeta de fotos",
+    needFiles: "Esperando enlace de Picstome...",
+    ready: "Listo para ratear {n} foto{s} con {r} ★",
+    applying: "Aplicando rating…",
+    applyBtn: "Aplicar rating",
+    changeBtn: "Cambiar...",
+    folderLabel: "Carpeta de fotos",
+    photos: "fotos",
+    rating: "Rating",
+    rated: "✓ {n} archivo{s} rateado{s}",
+    notFound: "⚠ {n} no encontrado{s}",
+    errors: "✖ {n} error{s}",
   },
 };
 
@@ -28,9 +69,15 @@ function getLang() {
   return locale.toLowerCase().startsWith("es") ? "es" : "en";
 }
 
-function t(key) {
+function t(key, vars) {
   const lang = getLang();
-  return STRINGS[lang][key] ?? STRINGS.en[key] ?? key;
+  let str = STRINGS[lang]?.[key] ?? STRINGS.en[key] ?? key;
+  if (vars) {
+    str = str.replace(/\{(\w+)\}/g, (m, name) =>
+      name in vars ? String(vars[name]) : m,
+    );
+  }
+  return str;
 }
 
 const CONFIG_PATH = path.join(app.getPath("userData"), "config.json");
@@ -44,7 +91,11 @@ function loadConfig() {
 }
 
 function saveConfig(cfg) {
-  fs.writeFileSync(CONFIG_PATH, JSON.stringify(cfg, null, 2));
+  try {
+    fs.writeFileSync(CONFIG_PATH, JSON.stringify(cfg, null, 2), { mode: 0o600 });
+  } catch (err) {
+    console.error("Could not save config:", err);
+  }
 }
 
 function exiftoolPath() {
@@ -55,6 +106,14 @@ function exiftoolPath() {
   return process.platform === "win32"
     ? path.join(base, "exiftool.exe")
     : path.join(base, "exiftool");
+}
+
+function isDirectory(dir) {
+  try {
+    return fs.statSync(dir).isDirectory();
+  } catch {
+    return false;
+  }
 }
 
 function normalizeRating(value) {
@@ -74,10 +133,33 @@ function ratingPercentFromStars(rating) {
   return map[String(rating)] ?? "0";
 }
 
+function sanitizeFileNames(files) {
+  if (!Array.isArray(files) || files.length === 0) return null;
+  if (files.length > MAX_FILES) return null;
+
+  const names = [];
+  for (const file of files) {
+    if (typeof file !== "string") return null;
+    const name = file.trim();
+    if (!name || name.length > 255) return null;
+    if (name === "." || name === "..") return null;
+    if (/[\\/]/.test(name)) return null;
+    if (/[\u0000-\u001f\u007f]/.test(name)) return null;
+    names.push(name);
+  }
+  return names;
+}
+
+function errorDetails(names, msg) {
+  return names.map((name) => ({ name, status: "error", msg }));
+}
+
 let mainWindow = null;
 let pendingRate = null;
 let pendingURL = null;
-let isQuitting = false;
+let trustedPhotosDir = null;
+let updateDownloaded = false;
+let exiftoolProbePromise = null;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -93,20 +175,27 @@ function createWindow() {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
       nodeIntegration: false,
+      sandbox: true,
+      spellCheck: false,
     },
   });
 
   mainWindow.loadFile(path.join(__dirname, "index.html"));
 
+  mainWindow.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+  mainWindow.webContents.on("will-navigate", (event) => event.preventDefault());
+
   mainWindow.webContents.on("did-finish-load", () => {
     const cfg = loadConfig();
+    trustedPhotosDir = isDirectory(cfg.photosDir) ? cfg.photosDir : null;
 
     mainWindow.webContents.send("init", {
       lang: getLang(),
       config: {
-        ...cfg,
+        photosDir: trustedPhotosDir || "",
         lastRating: normalizeRating(cfg.lastRating || "1"),
       },
+      strings: STRINGS[getLang()],
     });
 
     if (pendingRate) {
@@ -153,12 +242,13 @@ function parseRateURL(url) {
     .map((s) => s.trim())
     .filter(Boolean);
 
+  if (files.length === 0 || files.length > MAX_FILES) return null;
+
   const hasRating = parsed.searchParams.has("rating");
   const rating = hasRating
     ? normalizeRating(parsed.searchParams.get("rating"))
     : null;
 
-  if (!files.length) return null;
   return { files, rating };
 }
 
@@ -208,11 +298,16 @@ async function chooseFolder() {
 
   if (result.canceled || !result.filePaths?.[0]) return null;
 
+  const dir = result.filePaths[0];
+  if (!isDirectory(dir)) return null;
+
   const cfg = loadConfig();
-  cfg.photosDir = result.filePaths[0];
+  cfg.photosDir = dir;
   saveConfig(cfg);
 
-  return result.filePaths[0];
+  trustedPhotosDir = dir;
+
+  return dir;
 }
 
 function findExactCaseInsensitive(dirFiles, base, ext) {
@@ -220,21 +315,80 @@ function findExactCaseInsensitive(dirFiles, base, ext) {
   return dirFiles.find((f) => f.toLowerCase() === target) || null;
 }
 
-function runExiftoolOnFile(exiftool, filePath, rating) {
+function exiftoolCandidates() {
+  const tool = exiftoolPath();
+  if (process.platform === "win32") {
+    return [{ file: tool, prefix: [] }];
+  }
+
+  return [
+    { file: tool, prefix: [] },
+    { file: "/usr/bin/perl", prefix: [tool] },
+    { file: "perl", prefix: [tool] },
+  ];
+}
+
+async function probeExiftool() {
+  const tool = exiftoolPath();
+
+  try {
+    if (process.platform !== "win32") {
+      fs.chmodSync(tool, 0o755);
+    }
+  } catch {
+    // best effort: packaged builds sometimes lose the executable bit
+  }
+
+  for (const candidate of exiftoolCandidates()) {
+    if (candidate.file !== "perl" && !fs.existsSync(candidate.file)) continue;
+
+    const works = await new Promise((resolve) => {
+      execFile(
+        candidate.file,
+        [...candidate.prefix, "-ver"],
+        { timeout: PROBE_TIMEOUT_MS, windowsHide: true },
+        (err, stdout) =>
+          resolve(!err && /^\d+\.\d+/.test(String(stdout).trim())),
+      );
+    });
+
+    if (works) return candidate;
+  }
+
+  console.error("No working exiftool found at:", tool);
+  return null;
+}
+
+function getExiftool() {
+  if (!exiftoolProbePromise) {
+    exiftoolProbePromise = probeExiftool();
+  }
+  return exiftoolProbePromise;
+}
+
+function runExiftool(cmd, filePaths, rating) {
   return new Promise((resolve) => {
     const ratingPercent = ratingPercentFromStars(rating);
 
+    const args = [
+      ...cmd.prefix,
+      "-m",
+      "-overwrite_original",
+      "-P",
+      "-quiet",
+      `-Rating=${rating}`,
+      `-RatingPercent=${ratingPercent}`,
+      ...filePaths,
+    ];
+
     execFile(
-      exiftool,
-      [
-        "-m",
-        "-overwrite_original",
-        "-P",
-        "-quiet",
-        `-Rating=${rating}`,
-        `-RatingPercent=${ratingPercent}`,
-        filePath,
-      ],
+      cmd.file,
+      args,
+      {
+        timeout: EXIFTOOL_TIMEOUT_MS,
+        windowsHide: true,
+        maxBuffer: 10 * 1024 * 1024,
+      },
       (err, stdout, stderr) => {
         if (err) {
           const msg = (stderr || stdout || err.message || "").trim();
@@ -248,11 +402,12 @@ function runExiftoolOnFile(exiftool, filePath, rating) {
 }
 
 async function doRate(files, rating, photosDir) {
-  const exiftool = exiftoolPath();
-  const IMAGE_EXTS = ["jpg", "jpeg", "dng"];
-  const RAW_EXTS = ["cr3", "cr2", "arw", "nef", "raf", "orf", "rw2"];
+  const exiftool = await getExiftool();
+  let rated = 0;
+  let notFound = 0;
+  let errors = 0;
 
-  let dirFiles = [];
+  let dirFiles;
   try {
     dirFiles = fs.readdirSync(photosDir);
   } catch {
@@ -260,18 +415,20 @@ async function doRate(files, rating, photosDir) {
       rated: 0,
       notFound: files.length,
       errors: 0,
-      details: files.map((name) => ({
-        name,
-        status: "error",
-        msg: t("folderError"),
-      })),
+      details: errorDetails(files, t("folderError")),
     };
   }
 
-  const details = [];
-  let rated = 0;
-  let notFound = 0;
-  let errors = 0;
+  if (!exiftool) {
+    return {
+      rated: 0,
+      notFound: 0,
+      errors: files.length,
+      details: errorDetails(files, t("exiftoolMissing")),
+    };
+  }
+
+  const slots = [];
 
   for (const base of files) {
     const matches = [];
@@ -288,34 +445,58 @@ async function doRate(files, rating, photosDir) {
 
     if (matches.length === 0) {
       notFound += 1;
-      details.push({
-        name: base,
-        status: "notfound",
-        msg: t("notFoundDetail"),
+      slots.push({
+        file: false,
+        detail: { name: base, status: "notfound", msg: t("notFoundDetail") },
       });
       continue;
     }
 
     for (const filePath of matches) {
-      const err = await runExiftoolOnFile(exiftool, filePath, rating);
+      const name = path.basename(filePath);
+      slots.push({
+        file: true,
+        name,
+        filePath,
+        detail: { name, status: "ok", file: name },
+      });
+    }
+  }
+
+  const fileSlots = slots.filter((slot) => slot.file);
+
+  for (let i = 0; i < fileSlots.length; i += BATCH_SIZE) {
+    const batch = fileSlots.slice(i, i + BATCH_SIZE);
+    const batchErr = await runExiftool(
+      exiftool,
+      batch.map((slot) => slot.filePath),
+      rating,
+    );
+
+    if (!batchErr) {
+      for (const slot of batch) {
+        rated += 1;
+      }
+      continue;
+    }
+
+    for (const slot of batch) {
+      const err = await runExiftool(exiftool, [slot.filePath], rating);
 
       if (err) {
         errors += 1;
-        details.push({
-          name: path.basename(filePath),
+        slot.detail = {
+          name: slot.name,
           status: "error",
           msg: err.message,
-        });
+        };
       } else {
         rated += 1;
-        details.push({
-          name: path.basename(filePath),
-          status: "ok",
-          file: path.basename(filePath),
-        });
       }
     }
   }
+
+  const details = slots.map((slot) => slot.detail);
 
   return { rated, notFound, errors, details };
 }
@@ -328,19 +509,73 @@ ipcMain.handle("get-config", () => {
   return loadConfig();
 });
 
-ipcMain.handle("rate-files", async (event, { files, rating, photosDir }) => {
+ipcMain.handle("rate-files", async (event, { files, rating, photosDir } = {}) => {
   const normalized = normalizeRating(rating);
+
+  if (!Array.isArray(files) || files.length === 0) {
+    return {
+      rated: 0,
+      notFound: 0,
+      errors: 1,
+      details: [{ name: "—", status: "error", msg: t("invalidRequest") }],
+    };
+  }
+
+  if (files.length > MAX_FILES) {
+    return {
+      rated: 0,
+      notFound: 0,
+      errors: 1,
+      details: [
+        {
+          name: `${files.length} files`,
+          status: "error",
+          msg: t("tooManyFiles", { max: MAX_FILES }),
+        },
+      ],
+    };
+  }
+
+  const names = sanitizeFileNames(files);
+  if (!names) {
+    return {
+      rated: 0,
+      notFound: 0,
+      errors: 1,
+      details: [{ name: "—", status: "error", msg: t("invalidRequest") }],
+    };
+  }
+
+  const requested =
+    typeof photosDir === "string" && photosDir.length > 0
+      ? path.resolve(photosDir)
+      : null;
+  if (
+    !trustedPhotosDir ||
+    !requested ||
+    requested !== path.resolve(trustedPhotosDir)
+  ) {
+    return {
+      rated: 0,
+      notFound: 0,
+      errors: names.length,
+      details: errorDetails(names, t("folderError")),
+    };
+  }
+
   const cfg = loadConfig();
-  cfg.photosDir = photosDir;
   cfg.lastRating = normalized;
   saveConfig(cfg);
 
-  return await doRate(files, normalized, photosDir);
+  return await doRate(names, normalized, trustedPhotosDir);
 });
 
 ipcMain.handle("install-update", () => {
-  isQuitting = true;
+  if (!updateDownloaded) {
+    return { ok: false };
+  }
   autoUpdater.quitAndInstall();
+  return { ok: true };
 });
 
 function setupAutoUpdater() {
@@ -348,6 +583,10 @@ function setupAutoUpdater() {
 
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;
+
+  autoUpdater.on("error", (err) => {
+    console.error("Auto-updater error:", err);
+  });
 
   autoUpdater.on("update-available", () => {
     mainWindow?.webContents.send("update-status", {
@@ -357,22 +596,20 @@ function setupAutoUpdater() {
   });
 
   autoUpdater.on("update-downloaded", () => {
+    updateDownloaded = true;
     mainWindow?.webContents.send("update-status", {
       type: "ready",
       msg: t("updateReady"),
     });
   });
 
-  autoUpdater.checkForUpdatesAndNotify();
+  autoUpdater.checkForUpdatesAndNotify().catch((err) => {
+    console.error("Update check failed:", err);
+  });
 }
 
-if (!setupSingleInstance()) {
-} else {
+if (setupSingleInstance()) {
   registerProtocol();
-
-  app.on("before-quit", () => {
-    isQuitting = true;
-  });
 
   app.on("open-url", (event, url) => {
     event.preventDefault();
@@ -383,6 +620,7 @@ if (!setupSingleInstance()) {
   app.whenReady().then(() => {
     createWindow();
     setupAutoUpdater();
+    getExiftool().catch(() => {});
 
     const deepLink = process.argv.find(
       (arg) => typeof arg === "string" && arg.startsWith("picstome://"),
@@ -393,8 +631,6 @@ if (!setupSingleInstance()) {
     } else if (pendingURL) {
       handleURL(pendingURL);
       pendingURL = null;
-    } else if (!app.isPackaged) {
-      showMainWindow();
     } else {
       showMainWindow();
     }

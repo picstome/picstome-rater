@@ -6,7 +6,12 @@ dist/
 
 # Electron builder cache
 .cache/
-build/
+
+# build resources (keep the app icons!)
+build/*
+!build/icon.png
+!build/icon.ico
+!build/icon.icns
 
 # macOS
 .DS_Store

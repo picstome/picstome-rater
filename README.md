@@ -40,20 +40,27 @@ npm start
 Test the URL scheme by pasting this in your browser while the app is running:
 picstome://rate?files=1Z8A4331,1Z8A4373,1Z8A4378&rating=1
 
-text
+You can also pass it directly for testing:
+```bash
+npm start -- "picstome://rate?files=1Z8A4331&rating=1"
+```
 
 ## Build
 
 ```bash
-# macOS — outputs dist/PicstomeRater.dmg (universal: arm64 + x64)
+# macOS — outputs two DMGs: Intel (Picstome Rater-<version>.dmg)
+# and Apple Silicon (Picstome Rater-<version>-arm64.dmg)
 npm run dist:mac
 
-# Windows — outputs dist/PicstomeRater Setup.exe
+# Windows — outputs dist/Picstome Rater Setup <version>.exe
 npm run dist:win
 
 # Both platforms at once
 npm run dist:all
 ```
+
+Note: without an Apple Developer ID the macOS build is **unsigned**, so users
+may need to right-click the app → **Open** the first time (Gatekeeper).
 
 ## Auto-update
 
@@ -81,12 +88,14 @@ Detects OS language automatically:
 ## URL scheme
 picstome://rate?files=1Z8A4331,1Z8A4373&rating=1
 
-text
-
 | Parameter | Description                   | Default |
 |-----------|-------------------------------|---------|
 | `files`   | Base names separated by comma | —       |
 | `rating`  | Value 1–5                     | `1`     |
+
+A link may contain up to 5000 file names. Ratings are only ever written to the
+folder you selected in the app (a folder path can't be set from a link or by
+anything running inside the UI).
 
 ## Supported formats
 
