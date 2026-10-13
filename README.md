@@ -62,6 +62,31 @@ npm run dist:all
 Note: without an Apple Developer ID the macOS build is **unsigned**, so users
 may need to right-click the app → **Open** the first time (Gatekeeper).
 
+## Releasing
+
+Releases are built and published automatically by GitHub Actions
+(`.github/workflows/release.yml`) whenever you push a tag:
+
+```bash
+# 1. Bump "version" in package.json, e.g. 1.2.0
+git commit -am "1.2 ..."
+
+# 2. Tag it (tag name is free-form, e.g. "1.2" or "v1.2.0")
+git tag -a 1.2 -m "1.2"
+
+# 3. Push both — the workflow builds, signs nothing, and publishes
+git push && git push origin 1.2
+```
+
+The workflow builds macOS (Intel + Apple Silicon) and Windows with
+`--publish always`, which uploads the installers **and** the `latest.yml` /
+`latest-mac.yml` update manifests to the GitHub release. Don't rename the
+assets afterwards — auto-updates match files by the names in those manifests.
+
+Users then update from inside the app ("Restart & Update"), or download the
+files from the release page.
+
+
 ## Auto-update
 
 Uses `electron-updater` with GitHub Releases.
