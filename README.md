@@ -86,6 +86,14 @@ assets afterwards — auto-updates match files by the names in those manifests.
 Users then update from inside the app ("Restart & Update"), or download the
 files from the release page.
 
+## Update checks
+
+The app looks for a new version **at most once every 30 days** (the last
+successful check is stored as `lastUpdateCheckAt` in `config.json`), not on
+every launch. A check that fails (offline, unreachable release) is not counted,
+so it retries the next time the app starts. When a newer version is found it
+downloads automatically and shows the "Restart & Update" banner.
+
 
 ## Auto-update
 

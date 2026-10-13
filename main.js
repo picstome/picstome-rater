@@ -3,6 +3,11 @@ const { autoUpdater } = require("electron-updater");
 const path = require("path");
 const fs = require("fs");
 const { execFile } = require("child_process");
+const {
+  UPDATE_CHECK_INTERVAL_MS,
+  shouldCheckForUpdates,
+  daysSinceCheck,
+} = require("./lib/updates.js");
 
 const APP_NAME = "Picstome Rater";
 
@@ -584,11 +589,18 @@ function setupAutoUpdater() {
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;
 
+  // A check that reaches an answer (new version or not) counts as done.
+  // Failures deliberately don't, so they retry on the next launch.
+  const checkAnswered = () => markUpdateChecked();
+
   autoUpdater.on("error", (err) => {
     console.error("Auto-updater error:", err);
   });
 
+  autoUpdater.on("update-not-available", checkAnswered);
+
   autoUpdater.on("update-available", () => {
+    checkAnswered();
     mainWindow?.webContents.send("update-status", {
       type: "available",
       msg: t("updateAvailable"),
@@ -597,15 +609,32 @@ function setupAutoUpdater() {
 
   autoUpdater.on("update-downloaded", () => {
     updateDownloaded = true;
+    checkAnswered();
     mainWindow?.webContents.send("update-status", {
       type: "ready",
       msg: t("updateReady"),
     });
   });
 
+  const cfg = loadConfig();
+  const days = daysSinceCheck(cfg.lastUpdateCheckAt, Date.now());
+
+  if (
+    !shouldCheckForUpdates(cfg.lastUpdateCheckAt, Date.now(), UPDATE_CHECK_INTERVAL_MS)
+  ) {
+    console.log(`Skipping update check (last checked ${days} days ago)`);
+    return;
+  }
+
   autoUpdater.checkForUpdatesAndNotify().catch((err) => {
     console.error("Update check failed:", err);
   });
+}
+
+function markUpdateChecked() {
+  const cfg = loadConfig();
+  cfg.lastUpdateCheckAt = Date.now();
+  saveConfig(cfg);
 }
 
 if (setupSingleInstance()) {
