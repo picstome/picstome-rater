@@ -21,8 +21,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
+          cache: npm
       - run: npm ci
+        env:
+          # the check job only parses files; skip the ~100MB electron download
+          ELECTRON_SKIP_BINARY_DOWNLOAD: 1
       - name: Sanity check sources
         run: |
           node --check main.js
@@ -39,7 +43,8 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
+          cache: npm
       - run: npm ci
 
       # Unsigned builds: the app is not notarized, no Apple Developer ID.
