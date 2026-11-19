@@ -133,4 +133,6 @@ jobs:
           make_latest: true
           files: release-assets/*
           fail_on_unmatched_files: true
-          generate_release_notes: true
+          # The release body is curated by hand (bilingual download guide), so
+          # never let auto-generated notes rewrite it.
+          generate_release_notes: false
