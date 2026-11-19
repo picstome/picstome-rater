@@ -78,10 +78,15 @@ git tag -a 1.2 -m "1.2"
 git push && git push origin 1.2
 ```
 
-The workflow builds macOS (Intel + Apple Silicon) and Windows with
-`--publish always`, which uploads the installers **and** the `latest.yml` /
-`latest-mac.yml` update manifests to the GitHub release. Don't rename the
-assets afterwards — auto-updates match files by the names in those manifests.
+The workflow builds macOS (Intel + Apple Silicon) on `macos-latest` and Windows
+on `windows-latest`, both with `--publish never`. A final `publish` job waits
+for both, downloads their artifacts and uploads the installers **and** the
+`latest.yml` / `latest-mac.yml` update manifests to the GitHub release of the
+tag. Building on separate runners and uploading once avoids the race that can
+leave a release with only some platforms.
+
+Don't rename the assets afterwards — auto-updates match files by the names in
+those manifests.
 
 Users then update from inside the app ("Restart & Update"), or download the
 files from the release page.
